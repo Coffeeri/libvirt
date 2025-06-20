@@ -519,6 +519,9 @@ chDomainShutdownFlags(virDomainPtr dom,
     }
 
     virDomainObjSetState(vm, VIR_DOMAIN_SHUTDOWN, VIR_DOMAIN_SHUTDOWN_USER);
+    if (virDomainObjSave(vm, priv->driver->xmlopt, virCHDriverGetConfig(priv->driver)->stateDir) < 0) {
+        VIR_WARN("Failed to save status on vm %s", vm->def->name);
+    }
 
     ret = 0;
 
@@ -578,6 +581,9 @@ chDomainReboot(virDomainPtr dom, unsigned int flags)
         virDomainObjSetState(vm, VIR_DOMAIN_RUNNING, VIR_DOMAIN_RUNNING_BOOTED);
     else
         virDomainObjSetState(vm, VIR_DOMAIN_RUNNING, VIR_DOMAIN_RUNNING_UNPAUSED);
+    if (virDomainObjSave(vm, priv->driver->xmlopt, virCHDriverGetConfig(priv->driver)->stateDir) < 0) {
+        VIR_WARN("Failed to save status on vm %s", vm->def->name);
+    }
 
     ret = 0;
 
@@ -623,6 +629,9 @@ chDomainSuspend(virDomainPtr dom)
     }
 
     virDomainObjSetState(vm, VIR_DOMAIN_PAUSED, VIR_DOMAIN_PAUSED_USER);
+    if (virDomainObjSave(vm, priv->driver->xmlopt, virCHDriverGetConfig(priv->driver)->stateDir) < 0) {
+        VIR_WARN("Failed to save status on vm %s", vm->def->name);
+    }
 
     ret = 0;
 
@@ -668,6 +677,9 @@ chDomainResume(virDomainPtr dom)
     }
 
     virDomainObjSetState(vm, VIR_DOMAIN_RUNNING, VIR_DOMAIN_RUNNING_UNPAUSED);
+    if (virDomainObjSave(vm, priv->driver->xmlopt, virCHDriverGetConfig(priv->driver)->stateDir) < 0) {
+        VIR_WARN("Failed to save status on vm %s", vm->def->name);
+    }
 
     ret = 0;
 
@@ -1910,6 +1922,7 @@ chDomainPinVcpuFlags(virDomainPtr dom,
     if (persistentDef) {
         virBitmapFree(vcpuinfo->cpumask);
         vcpuinfo->cpumask = g_steal_pointer(&pcpumap);
+        ret = virDomainDefSave(persistentDef, driver->xmlopt, cfg->configDir);
         goto endjob;
     }
 
@@ -2073,7 +2086,8 @@ chDomainPinEmulator(virDomainPtr dom,
         virBitmapFree(persistentDef->cputune.emulatorpin);
         persistentDef->cputune.emulatorpin = virBitmapNewCopy(pcpumap);
 
-        /* Inactive XMLs are not saved, yet. */
+        ret = virDomainDefSave(persistentDef, driver->xmlopt, cfg->configDir);
+        goto endjob;
     }
 
     ret = 0;
@@ -2334,7 +2348,8 @@ chDomainSetNumaParameters(virDomainPtr dom,
                                  -1, mode, nodeset) < 0)
             goto endjob;
 
-        /* Inactive XMLs are not saved, yet. */
+        if (virDomainDefSave(persistentDef, driver->xmlopt, cfg->configDir) < 0)
+            goto endjob;
     }
 
     ret = 0;
