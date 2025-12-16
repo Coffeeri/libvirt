@@ -2903,15 +2903,20 @@ chDomainMigratePrepare3(virConnectPtr dconn,
     DBG("%p %s %u %p %p %s %p %lu %s %s",
         dconn, cookiein, cookieinlen, cookieout, cookieoutlen, uri_in, uri_out, flags, dname, dom_xml);
 
-    if (virDomainMigratePrepare3EnsureACL(dconn, def) < 0)
-        return -1;
+    if (virDomainMigratePrepare3EnsureACL(dconn, def) < 0) {
+        rc = -1;
+        goto cleanup;
+    }
 
-    if (!(def = chMigrationAnyPrepareDef(driver, dom_xml, dname)))
-        return -1;
+    if (!(def = chMigrationAnyPrepareDef(driver, dom_xml, dname))) {
+        rc = -1;
+        goto cleanup;
+    }
 
     VIR_INFO("Got DomainDef prepared successfully");
 
     if (virPortAllocatorAcquire(driver->migrationPorts, &port) < 0) {
+        rc = -1;
         goto cleanup;
     }
     VIR_DEBUG("Got port %i", port);
@@ -2936,17 +2941,20 @@ chDomainMigratePrepare3(virConnectPtr dconn,
     {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Could not add Domain Obj to List"));
+        rc = -1;
         goto cleanup;
     }
 
     if (chMigrationJobStart(vm, VIR_ASYNC_JOB_MIGRATION_IN) < 0) {
         virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
                        _("Could not begin async migration job"));
+        rc = -1;
         goto cleanup;
     }
 
     if (virCHProcessInit(driver, vm) < 0) {
         DBG("Could not init process");
+        rc = -1;
         goto cleanup;
     }
 
@@ -2991,6 +2999,7 @@ chDomainMigratePrepare3(virConnectPtr dconn,
                             args) < 0) {
         virReportError(VIR_ERR_OPERATION_FAILED, "%s",
                        _("Failed to create thread for receiving migration data"));
+        rc = -1;
         goto cleanup;
     }
 
@@ -3017,7 +3026,9 @@ chDomainMigratePrepare3(virConnectPtr dconn,
 
 
  cleanup:
-    virDomainObjEndAPI(&vm);
+    if (vm != NULL) {
+        virDomainObjEndAPI(&vm);
+    }
     return rc;
 }
 
