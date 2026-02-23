@@ -3312,7 +3312,7 @@ static int virCHMonitorWaitForMigrationCompletion(virDomainObj *vm)
      * during the whole migration procedure. This prevents any modifying API
      * calls to the domain.
      */
-    virObjectUnlock(priv->monitor->vm);
+    virObjectUnlock(vm);
     while(1) {
         if (virCHRetrieveAndSyncMigrationProgress(priv) < 0) {
             DBG("Waiting for migration to finish failed because migration stats "
@@ -3341,7 +3341,7 @@ static int virCHMonitorWaitForMigrationCompletion(virDomainObj *vm)
     }
 
 out:
-    virObjectLock(priv->monitor->vm);
+    virObjectLock(vm);
     return rc;
 }
 
