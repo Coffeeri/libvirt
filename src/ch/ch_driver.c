@@ -3137,6 +3137,8 @@ chDomainMigratePrepare3(virConnectPtr dconn,
     }
 
     if (!(def = chMigrationAnyPrepareDef(driver, dom_xml, dname))) {
+        virReportError(VIR_ERR_OPERATION_FAILED, "%s",
+                       _("Failed to prepare domain def"));
         rc = -1;
         goto err_cleanup_args;
     }
@@ -3183,6 +3185,8 @@ chDomainMigratePrepare3(virConnectPtr dconn,
     }
 
     if (virCHProcessInit(driver, vm) < 0) {
+        virReportError(VIR_ERR_OPERATION_FAILED, "%s",
+                       _("Failed to init cloud-hypervisor process"));
         DBG("Could not init process");
         rc = -1;
         goto err_cleanup_job_start;
@@ -3226,6 +3230,8 @@ chDomainMigratePrepare3(virConnectPtr dconn,
     if (vm->def->numa) {
         args->cells = virJSONValueNewObject();
         if (virCHMonitorBuildMemoryZonesJson(args->cells, vm->def) != 0) {
+            virReportError(VIR_ERR_OPERATION_FAILED, "%s",
+                           _("Failed to process NUMA info"));
             DBG("failed to process numa info");
             rc = -1;
             goto err_cleanup_cells;
