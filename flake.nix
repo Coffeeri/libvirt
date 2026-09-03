@@ -4,7 +4,7 @@
   inputs = {
     # A local path can be used for developing or testing local changes.
     # cloud-hypervisor.url = "git+file:<path/to/cloud-hypervisor>";
-    cloud-hypervisor.url = "github:cyberus-technology/cloud-hypervisor?ref=gardenlinux";
+    cloud-hypervisor.url = "github:coffeeri/cloud-hypervisor?ref=port-intel-tdx-fixes";
     cloud-hypervisor.inputs.nixpkgs.follows = "nixpkgs";
     # Previous release of cloud-hypervisor for migration testing with different versions.
     cloud-hypervisor-prev.url = "github:cyberus-technology/cloud-hypervisor?ref=gardenlinux-release-26-07-14";

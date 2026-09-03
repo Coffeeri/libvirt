@@ -10,16 +10,16 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1788272774,
-        "narHash": "sha256-NAzHm4Q9d7nr2AI4qqGLdlrA3OHEm0b/+Emy7wnc2ZI=",
-        "owner": "cyberus-technology",
+        "lastModified": 1788425138,
+        "narHash": "sha256-zPX6ni/73GG3nsD7ergSpyOmNnm2p9Be0W4fWldJbTY=",
+        "owner": "coffeeri",
         "repo": "cloud-hypervisor",
-        "rev": "3aac6a1e773fc509df1a31b16780c215e022d75d",
+        "rev": "a8c8ebf43828143f08fe18c502e5991888ce55ab",
         "type": "github"
       },
       "original": {
-        "owner": "cyberus-technology",
-        "ref": "gardenlinux",
+        "owner": "coffeeri",
+        "ref": "port-intel-tdx-fixes",
         "repo": "cloud-hypervisor",
         "type": "github"
       }
