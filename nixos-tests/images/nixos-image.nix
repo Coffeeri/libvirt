@@ -3,6 +3,7 @@
 {
   nixpkgs,
   chv-ovmf,
+  tdxGuest ? false,
 }:
 
 nixpkgs.lib.nixosSystem {
@@ -37,9 +38,11 @@ nixpkgs.lib.nixosSystem {
         boot.initrd.kernelModules = [
           "virtio_net"
         ];
+        boot.kernelPackages = lib.mkIf tdxGuest (lib.mkForce pkgs.linuxPackages_6_18);
         boot.kernelModules = [
           "msr"
-        ];
+        ]
+        ++ lib.optional tdxGuest "tdx_guest";
         boot.kernelParams = [
           "console=ttyS0"
           "earlyprintk=ttyS0"
@@ -110,6 +113,11 @@ nixpkgs.lib.nixosSystem {
             eth1337 = {
               matchConfig.MACAddress = "52:54:00:e5:b8:01";
               address = [ "192.168.1.2/24" ];
+              linkConfig.RequiredForOnline = "no";
+            };
+            tdx = lib.mkIf tdxGuest {
+              matchConfig.MACAddress = "be:e3:00:00:00:01";
+              networkConfig.DHCP = "ipv4";
               linkConfig.RequiredForOnline = "no";
             };
             eth1338 = {
