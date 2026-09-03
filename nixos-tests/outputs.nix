@@ -55,6 +55,17 @@ let
     )
   ];
 
+  mainChv = cloud-hypervisor.packages."x86_64-linux".default;
+
+  cloud-hypervisor-tdx = toDebugOptimizedChv (
+    mainChv.overrideAttrs (oldAttrs: {
+      name = "cloud-hypervisor-tdx";
+      buildPhase =
+        pkgs.lib.replaceStrings [ "--features kvm" ] [ "--features kvm,tdx" ]
+          oldAttrs.buildPhase;
+    })
+  );
+
   testPkgs = pkgs.appendOverlays [
     (_: prev: {
       cloud-hypervisor = toDebugOptimizedChv cloud-hypervisor.packages."x86_64-linux".default;
@@ -203,7 +214,7 @@ let
       libvirt
       libvirt-prev
       ;
-    inherit nixos-image;
+    inherit nixos-image cloud-hypervisor-tdx;
     chv-ovmf = pkgs.runCommand "OVMF-CLOUHDHV.fd" { } ''
       cp ${chv-ovmf.fd}/FV/CLOUDHV.fd $out
     '';
