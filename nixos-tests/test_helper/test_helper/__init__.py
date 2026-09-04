@@ -1,3 +1,4 @@
+from .local_machine import LocalMachine
 from .test_helper import (
     CommandGuard,
     LibvirtTestsBase,
@@ -46,6 +47,7 @@ from .test_helper import (
 __all__ = [
     "CommandGuard",
     "LibvirtTestsBase",
+    "LocalMachine",
     "MAX_EXPECTED_WAIT_SEC",
     "MigrationThrottleGuard",
     "VIRTIO_BLOCK_DEVICE",

@@ -12,7 +12,7 @@ try:
 except ImportError:
     pass
 
-from test_driver.machine import QemuMachine  # type: ignore
+from test_driver.machine import BaseMachine, QemuMachine  # type: ignore
 from typing import Any, Callable, Iterator, List, Literal, Self
 
 # VIRTIO PCI constants
@@ -587,7 +587,7 @@ def wait_until_fail(func: Callable[[], bool], retries: int = 600) -> None:
 
 
 def wait_for_host_shares_ipv4_network(
-    machine: QemuMachine, ip: str = "192.168.1.2", retries=20
+    machine: BaseMachine, ip: str = "192.168.1.2", retries=20
 ):
     """
     Wait until the host has an IPv4 address in the same /24 network as the
@@ -618,7 +618,7 @@ def wait_for_host_shares_ipv4_network(
 
 
 def wait_for_ping(
-    machine: QemuMachine, ip: str = "192.168.1.2", retries: int = 200
+    machine: BaseMachine, ip: str = "192.168.1.2", retries: int = 200
 ) -> None:
     """
     Waits for the VM to become pingable.
@@ -644,7 +644,7 @@ def wait_for_ping(
 
 
 def wait_for_ssh(
-    machine: QemuMachine,
+    machine: BaseMachine,
     user: str = "root",
     password: str = "root",
     ip: str = "192.168.1.2",
@@ -686,7 +686,7 @@ def wait_for_ssh(
 
 
 def ssh(
-    machine: QemuMachine,
+    machine: BaseMachine,
     cmd: str,
     user: str = "root",
     password: str = "root",
@@ -718,10 +718,10 @@ def ssh(
 
     # And here we check if the guest also responds via SSH.
     status, out = machine.execute(
-        f"sshpass -p {password} ssh {extra_ssh_params} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no {user}@{ip} {cmd}"
+        f"sshpass -p {password} ssh {extra_ssh_params} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no {user}@{ip} {shlex.quote(cmd)}"
     )
     if status != 0:
-        raise RuntimeError(f"failed to execute cmd in VM: `{cmd}`")
+        raise RuntimeError(f"failed to execute cmd in VM: `{cmd}`\noutput:\n{out}")
     return out
 
 
@@ -901,7 +901,7 @@ def allocate_hugepages(machine: QemuMachine, nr_hugepages: int) -> None:
 
 
 def get_local_192_168_net24_networks(
-    machine: QemuMachine,
+    machine: BaseMachine,
 ) -> List[ipaddress.IPv4Network]:
     """
     Discover local IPv4 interface networks that match all the following:
@@ -909,7 +909,7 @@ def get_local_192_168_net24_networks(
       - Prefix length exactly /24
       - Network is within 192.168.0.0/16
 
-    :param machine: QemuMachine to execute the SSH command on.
+    :param machine: BaseMachine to execute the SSH command on.
     """
     status, result = machine.execute("ip -j a")
     assert status == 0
@@ -944,7 +944,7 @@ def get_local_192_168_net24_networks(
     return sorted(networks)
 
 
-def ip_in_local_192_168_net24(machine: QemuMachine, ip: str) -> bool:
+def ip_in_local_192_168_net24(machine: BaseMachine, ip: str) -> bool:
     """
     Checks if the given IPv4 address belongs to one of the machine's local
     192.168.x.0/24 networks.
@@ -958,7 +958,7 @@ def ip_in_local_192_168_net24(machine: QemuMachine, ip: str) -> bool:
     192.168.x.x address (e.g. after network reconfiguration, hotplug,
     or unintended interface changes).
 
-    :param machine: QemuMachine on which local network interfaces are inspected.
+    :param machine: BaseMachine on which local network interfaces are inspected.
     :param ip: Target IPv4 address expected to be reachable via a local /24
                192.168.x.0 network.
     :return: Whether the host shares a local IPv4 network with the given IP.
