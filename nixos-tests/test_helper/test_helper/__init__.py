@@ -1,3 +1,4 @@
+from .local_machine import LocalMachine
 from .test_helper import (
     AttachedDiskInfo,
     CommandGuard,
@@ -50,9 +51,10 @@ __all__ = [
     "AttachedDiskInfo",
     "CommandGuard",
     "LibvirtTestsBase",
-    "PciBdf",
+    "LocalMachine",
     "MAX_EXPECTED_WAIT_SEC",
     "MigrationThrottleGuard",
+    "PciBdf",
     "VIRTIO_BLOCK_DEVICE",
     "VIRTIO_ENTROPY_SOURCE",
     "VIRTIO_NETWORK_DEVICE",
