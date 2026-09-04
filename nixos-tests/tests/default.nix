@@ -1,7 +1,10 @@
 {
   pkgs,
   nixos-image,
+  nixos-tdx-image,
   chv-ovmf,
+  cloud-hypervisor-tdx,
+  nixos-test-driver,
   enablePortForwarding ? true,
 }:
 let
@@ -9,7 +12,6 @@ let
     inherit nixos-image;
     inherit (pkgs) writeText;
   };
-
   windowsLibvirtDomainCfg = import ./windows-domain-xml.nix {
     inherit pkgs;
   };
@@ -32,6 +34,18 @@ let
         extraComputeConfig
         ;
     };
+
+  createBareMetalTestSuite =
+    { testScriptFile, guestImage }:
+    pkgs.callPackage ./bare-metal-test.nix {
+      inherit
+        testScriptFile
+        guestImage
+        cloud-hypervisor-tdx
+        nixos-test-driver
+        ;
+    };
+
   # Function to add a passthru attribute to a nixos test derivation that
   # disables port forwarding. The non port forwarding version will mainly be
   # used in the CI.
@@ -42,7 +56,7 @@ let
       passthru.no_port_forwarding = drv.override { enablePortForwarding = false; };
     };
 
-  tests = {
+  nestedTests = {
     default = createTestSuite {
       inherit enablePortForwarding;
       testScriptFile = ./testsuite_default.py;
@@ -212,6 +226,13 @@ let
     };
   };
 
+  tests = (builtins.mapAttrs addNoPortForwardingAttr nestedTests) // {
+    tdx = createBareMetalTestSuite {
+      testScriptFile = ./testsuite_tdx.py;
+      guestImage = nixos-tdx-image;
+    };
+  };
+
   # Convenience attribute containing all nixos test driver attributes mainly
   # used for evaluation checks
   all_drivers = pkgs.symlinkJoin {
@@ -222,4 +243,4 @@ let
     ];
   };
 in
-(builtins.mapAttrs addNoPortForwardingAttr tests) // { inherit all_drivers; }
+tests // { inherit all_drivers; }
