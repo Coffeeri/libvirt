@@ -113,7 +113,15 @@
               ./patches/libvirt/0002-substitute-zfs-and-zpool-commands.patch
             ];
             mesonFlags =
-              (old.mesonFlags or [ ]) ++ lib.optional (commitHash != null) "-Dcommit_hash=${commitHash}";
+              (old.mesonFlags or [ ])
+              # TODO: Check if the workaround can be removed when upgrading to
+              # nixos-26.11
+              #
+              # nixpkgs wraps libvirtd during installation. Enable the separate
+              # daemon option only for sources that support it; older releases build
+              # the executable through driver_libvirtd alone.
+              ++ lib.optional (lib.hasInfix "option('libvirtd'," (builtins.readFile "${src}/meson_options.txt")) "-Dlibvirtd=enabled"
+              ++ lib.optional (commitHash != null) "-Dcommit_hash=${commitHash}";
           });
           libvirt-debugoptimized = libvirt.overrideAttrs (_old: {
             mesonBuildType = "debugoptimized";
