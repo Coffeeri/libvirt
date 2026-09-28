@@ -1,4 +1,5 @@
 import os
+import textwrap
 import time
 import unittest
 from pathlib import Path
@@ -15,6 +16,52 @@ def assert_tdx_guest_is_initialized(machine: LocalMachine) -> None:
     """Checks that the guest exposes and initializes TDX."""
     machine.ssh("test -c /dev/tdx_guest")
     machine.ssh("dmesg --color=never | grep -F 'tdx: Guest detected'")
+
+
+def assert_tdx_guest_generates_quote(machine: LocalMachine) -> None:
+    """Checks that the guest can obtain a TD quote from the host QGS.
+
+    Checking the quote is not the hypervisor's job.
+    """
+    output = machine.ssh(
+        textwrap.dedent("""
+        set -euo pipefail
+
+        # Ensure configfs is mounted
+        if ! mountpoint -q /sys/kernel/config; then
+            mount -t configfs none /sys/kernel/config
+        fi
+
+        report_dir=/sys/kernel/config/tsm/report
+        report="$report_dir/report0"
+        quote=/tmp/tdx-quote.bin
+
+        # Create the report directory
+        mkdir -p "$report"
+        trap 'rmdir "$report"' EXIT
+
+        # Check that the report uses the TDX provider
+        test "$(cat "$report/provider")" = tdx_guest
+
+        # Provide 64 bytes of REPORTDATA (nonce)
+        head -c 64 /dev/urandom > "$report/inblob"
+
+        # Retrieve the quote
+        cat "$report/outblob" > "$quote"
+
+        # Check if the quote is empty
+        size=$(wc -c < "$quote")
+        if [ "$size" -eq 0 ]; then
+            echo "the guest returned an empty TD quote. Is the Intel Quote Generation Service running on the host and listening on /var/run/tdx-qgs/qgs.socket?" >&2
+            exit 1
+        fi
+
+        # Show the quote
+        echo "TD quote size: $size bytes"
+        hexdump -C "$quote"
+        """).strip()
+    )
+    print(output)
 
 
 class TdxTests(unittest.TestCase):
@@ -50,6 +97,10 @@ class TdxTests(unittest.TestCase):
         if log_dir:
             self.machine.save_logs(Path(log_dir) / self._testMethodName / "tdx")
 
+    def test_tdx_guest_generates_quote(self) -> None:
+        """Verifies that the guest can obtain a TD quote from the host QGS."""
+        assert_tdx_guest_generates_quote(self.machine)
+
     def test_tdx_guest_is_initialized(self) -> None:
         """Verifies that the TDX guest is initialized."""
         assert_tdx_guest_is_initialized(self.machine)
@@ -67,6 +118,7 @@ class TdxTests(unittest.TestCase):
 
 def suite() -> unittest.TestSuite:
     testcases = [
+        TdxTests.test_tdx_guest_generates_quote,
         TdxTests.test_tdx_guest_is_initialized,
         TdxTests.test_tdx_guest_shuts_down,
         TdxTests.test_tdx_guest_survives_reboot,
